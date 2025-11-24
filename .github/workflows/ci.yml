@@ -5,7 +5,7 @@ name: Node.js CI
 on:
   # 브랜치에 푸시이벤트를 감지하는 설정
   push:
-    branch:
+    branches:
       - main
   # pull requets를 이벤트로 보는 설정
   pull_request:
@@ -35,7 +35,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v2
         with: # 모르겠음
-          node-version: ${{ maxtrix.node-version }}
+          node-version: ${{ matrix.node-version }}
 
       # 의존성을 추가하고, test를 실행하는 커맨드를 실행
       - name: Install dependencies
