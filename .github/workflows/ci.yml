@@ -26,7 +26,7 @@ jobs:
         node-version: [19.x, 20.x, 22.x]
 
     # 스탭을 정의
-    step:
+    steps:
       - name: checkout repositoy
         # 깃헙 엑션 공식 메서드인 checkout 메서드? 플로우를 활용
         uses: actions/checkout@v2
