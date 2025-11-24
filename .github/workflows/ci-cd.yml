@@ -40,7 +40,7 @@ jobs:
           password: ${{ secrets.DOCKER_TOKEN }}
       - name: Build and Push Docker build-and-push-image
         run: |
-          docker build --platfrom linux/amd64 -t ${{secrets.DOCKER_USERNAME}}/express-hello-word:latest .
+          docker build --platform linux/amd64 -t ${{secrets.DOCKER_USERNAME}}/express-hello-word:latest .
           docker push ${{ secrets.DOCKER_USERNAME }}/express-hello-world:latest
 
   deploy:
