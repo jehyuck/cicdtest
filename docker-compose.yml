@@ -1,0 +1,6 @@
+services:
+  express-hello-world:
+    image: wpgur07/express-hello-world:latest
+    ports:
+      - "3000:3000"
+    container_name: express-hello-world
