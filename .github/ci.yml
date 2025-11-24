@@ -1,0 +1,44 @@
+# 이름 설정
+name: Node.js CI
+
+# 이벤트 설정
+on:
+  # 브랜치에 푸시이벤트를 감지하는 설정
+  push:
+    branch:
+      - main
+  # pull requets를 이벤트로 보는 설정
+  pull_request:
+    branches:
+      - main
+
+# 작업, 스탭을 정의
+jobs:
+  # 작업을 하기 전 환경을 설정
+  build:
+    # 빌드를 할건데 우분투에서
+    runs-on: ubuntu-latest
+
+    # 작업 전략을 선택함
+    # 작업, 병렬, ?
+    startegy:
+      matrix:
+        node-version: [19.x, 20.x, 22.x]
+
+    # 스탭을 정의
+    step:
+      - name: checkout repositoy
+        # 깃헙 엑션 공식 메서드인 checkout 메서드? 플로우를 활용
+        uses: actions/checkout@v2
+
+      # 내 레포지토리에서, node를 셋업한다.
+      - name: Set up Node.js
+        uses: actions/setup-node@v2
+        with: # 모르겠음
+          node-version: ${{ maxtrix.node-version }}
+
+      # 의존성을 추가하고, test를 실행하는 커맨드를 실행
+      - name: Install dependencies
+        run: npm install
+      - name: Run test
+        run: npm test
