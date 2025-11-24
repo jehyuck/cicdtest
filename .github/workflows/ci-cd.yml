@@ -9,7 +9,6 @@ on:
       - main
 
 jobs:
-  # 테스트를 우분투, 19, 20, 22로 한다는 것
   test:
     runs-on: ubuntu-latest
     strategy:
@@ -23,7 +22,7 @@ jobs:
           node-version: ${{ matrix.node-version }}
       - name: Install dependencies
         run: npm install
-      - name: Run test
+      - name: Run tests
         run: npm test
 
   build-and-push-image:
@@ -38,9 +37,9 @@ jobs:
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_TOKEN }}
-      - name: Build and Push Docker build-and-push-image
+      - name: Build and Push Docker Image
         run: |
-          docker build --platform linux/amd64 -t ${{secrets.DOCKER_USERNAME}}/express-hello-word:latest .
+          docker build --platform linux/amd64 -t ${{ secrets.DOCKER_USERNAME }}/express-hello-world:latest .
           docker push ${{ secrets.DOCKER_USERNAME }}/express-hello-world:latest
 
   deploy:
@@ -48,25 +47,24 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Prepare SSH KEY
+      - name: Prepare SSH Key
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -H #{{ secrets.SERVER_HOST }} >> ~/.ssh/knwon_host
+          ssh-keyscan -H ${{ secrets.SERVER_HOST }} >> ~/.ssh/known_hosts
       - name: Check if Docker is installed
         id: check-docker
         run: |
-          DOCKER_EXISTS=$(ssh -i ~/.ssh/id_rsa -0 StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} 'command -v docker >/dev/null && echo "true" || echo "false"')
-          echo "docker_exists=$DOCKER_EXSITS" >> $GITHUB_OUTPUT
+          DOCKER_EXISTS=$(ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} 'command -v docker >/dev/null && echo "true" || echo "false"')
+          echo "docker_exists=$DOCKER_EXISTS" >> $GITHUB_OUTPUT
 
       - name: Check if Node.js is installed
         id: check-nodejs
         run: |
-          NODE_EXISTS=$(ssh-i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} 'command -v node >/dev/null && echo "true" || echo "false"')
+          NODE_EXISTS=$(ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} 'command -v node >/dev/null && echo "true" || echo "false"')
           echo "node_exists=$NODE_EXISTS" >> $GITHUB_OUTPUT
 
-      # 도커 체크에서 결과값이 false라면 설치한다.
       - name: Install Docker on EC2
         if: steps.check-docker.outputs.docker_exists == 'false'
         run: |
@@ -81,25 +79,27 @@ jobs:
             curl -fsSL https://download.docker.com/linux/ubuntu/gpg \
               | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
             echo \
-              "deb [arch=$(dpkg --pring-architecture) signed-by=/etc/apt/keyrings/docker.gpg]\
+              "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] \
               https://download.docker.com/linux/ubuntu \
-              $(lsb_release -cs) stable"
+              $(lsb_release -cs) stable" \
+              | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
             sudo apt-get update
             sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
             sudo usermod -aG docker $USER
           EOF
+
       - name: Install Node.js on EC2
-        if: steps.check-node.js.outputs.node_exists == 'false'
+        if: steps.check-nodejs.outputs.node_exists == 'false'
         run: |
           ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} << 'EOF'
             curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo -E bash -
-            sudo apt-get install -y Node.js
+            sudo apt-get install -y nodejs
           EOF
 
       - name: Deploy to EC2 via Docker Compose
         run: |
-          ssh -i ~/.ssh/id_rsa -o StrictHostKeyCheckingno ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} << 'EOF'
-            cd /home/${{ secrets.SERVER_USER }}/be
-            docker compose pull_request:
-            docker comopse up -d
+          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} << 'EOF'
+            cd /home/${{ secrets.SERVER_USER }}/backend
+            docker compose pull
+            docker compose up -d
           EOF
